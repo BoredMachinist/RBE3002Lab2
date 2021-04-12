@@ -12,17 +12,19 @@ class Lab2:
         """
         Class constructor
         """
+        self.current_telem = None
+        self.path_finnished = False
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab2'
         rospy.init_node("lab")
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
-        # TODO
+        cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
         ### When a message is received, call self.update_odometry
         rospy.Subscriber('/odom', Odometry, self.update_odometry)
         ### Tell ROS that this node subscribes to PoseStamped messages on the '/move_base_simple/goal' topic
         ### When a message is received, call self.go_to
-        # TODO
+        rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.go_to)
         pass
 
 
@@ -35,10 +37,17 @@ class Lab2:
         """
         ### REQUIRED CREDIT
         ### Make a new Twist message
-        # TODO
+        vel_msg = Twist()
+        vel_msg.linear.x = linear_speed
+        vel_msg.linear.y = 0.0
+        vel_msg.linear.z = 0.0
+
+        vel_msg.angular.x = 0.0
+        vel_msg.angular.y = 0.0
+        vel_msg.angular.z = angular_speed
+
         ### Publish the message
-        # TODO
-        pass # delete this when you implement your code
+        self.cmd_vel.publish(vel_msg)
 
     
         
@@ -119,7 +128,11 @@ class Lab2:
 
 
     def run(self):
+        self.send_speed(.1, .05)
         rospy.spin()
 
 if __name__ == '__main__':
-    Lab2().run()
+    try:
+        Lab2().run()
+    except rospy.ROSInterruptException:
+        pass
