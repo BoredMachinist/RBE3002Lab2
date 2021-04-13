@@ -18,7 +18,7 @@ class Lab2:
         ### Initialize node, name it 'lab2'
         rospy.init_node("lab")
         ### Tell ROS that this node publishes Twist messages on the '/cmd_vel' topic
-        cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         ### Tell ROS that this node subscribes to Odometry messages on the '/odom' topic
         ### When a message is received, call self.update_odometry
         rospy.Subscriber('/odom', Odometry, self.update_odometry)
@@ -99,7 +99,7 @@ class Lab2:
         (roll, pitch, yaw) = euler_from_quaternion(quat_list)
         self.pth = yaw
 
-        print("X:" + str(self.px) + " Y:" + str(self.py) + " Theta:" + str(self.pth))
+        # print("X:" + str(self.px) + " Y:" + str(self.py) + " Theta:" + str(self.pth))
 
 
 
@@ -128,8 +128,10 @@ class Lab2:
 
 
     def run(self):
-        self.send_speed(.1, .05)
-        rospy.spin()
+        rate = rospy.Rate(1) #1kHz
+        while not rospy.is_shutdown():
+            self.send_speed(.1, .05)
+            rate.sleep()
 
 if __name__ == '__main__':
     try:
