@@ -1,10 +1,15 @@
 #!/usr/bin/env python2
 
 import rospy
+import math
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
+from src.pathPlanning.trajectoryGenerator import Config
+from src.pathPlanning.pathTarget import PathTargetList
+from src.pathPlanning import pathGenerator
+
 
 class Lab2:
 
@@ -13,7 +18,8 @@ class Lab2:
         Class constructor
         """
         self.current_telem = None
-        self.path_finnished = False
+        self.path_finnished = True
+        self.seg_num = -1
         ### REQUIRED CREDIT
         ### Initialize node, name it 'lab2'
         rospy.init_node("lab")
@@ -99,7 +105,7 @@ class Lab2:
         (roll, pitch, yaw) = euler_from_quaternion(quat_list)
         self.pth = yaw
 
-        # print("X:" + str(self.px) + " Y:" + str(self.py) + " Theta:" + str(self.pth))
+        print("X:" + str(self.px) + " Y:" + str(self.py) + " Theta:" + str(self.pth))
 
 
 
@@ -122,15 +128,39 @@ class Lab2:
         :param linear_speed [float] [m/s] The maximum forward linear speed.
         """
         ### EXTRA CREDIT
-        # TODO
-        pass # delete this when you implement your code
+
+        goal_x = distance * math.cos(self.pth) + self.px
+        goal_y = distance * math.sin(self.pth) + self.py
+
+        goal_theta = self.pth
+
+        speed_limited_config = Config(.001, linear_speed, 2.5, 10)
+
+        path = PathTargetList()
+        path.addTarget(self.px, self.py, self.pth)
+        path.addTarget(goal_x, goal_y, goal_theta)
+
+        self.current_telem = pathGenerator.generateFromPath(path, speed_limited_config)
+        self.seg_num = 0
+        self.path_finnished = False
+
 
 
 
     def run(self):
         rate = rospy.Rate(1) #1kHz
+        rate.sleep()
+
+        lastHeading = self.pth
         while not rospy.is_shutdown():
-            self.send_speed(.1, .05)
+            #self.send_speed(.1, .05)
+            if not self.path_finnished:
+                self.send_speed(self.current_telem.get_segment(self.seg_num).vel, (self.current_telem.get_segment(self.seg_num).heading - lastHeading) / .0001)
+                lastHeading = self.current_telem.get_segment(self.seg_num).heading
+                self.seg_num += 1
+                if self.seg_num == self.current_telem.get_num_segments():
+                    self.path_finnished = True
+                    self.seg_num = -1
             rate.sleep()
 
 if __name__ == '__main__':
